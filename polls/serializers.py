@@ -4,6 +4,8 @@ from .models import Poll, Choice , Vote
 from django.contrib.auth.models import User
 from django.utils import timezone
 
+
+
 class PollSerializer(ModelSerializer):
     choices = serializers.SerializerMethodField()
     voted = serializers.SerializerMethodField()
@@ -18,6 +20,13 @@ class PollSerializer(ModelSerializer):
         Create a new poll.
         """
         user_id = self.context['created_by']
+        choices = self.context['choices']
+        # create choices if not None
+        if choices is not None:
+            poll = Poll.objects.create(created_by_id=user_id, **validated_data)
+            for choice in choices:
+                Choice.objects.create(poll=poll, choice_text=choice)
+            return poll
         user = User.objects.get(id=user_id)
         poll = Poll.objects.create(created_by=user, **validated_data)
         return poll

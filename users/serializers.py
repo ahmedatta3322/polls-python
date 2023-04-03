@@ -2,7 +2,7 @@ from rest_framework.serializers import ModelSerializer
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import serializers
-
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 class UserSerializer(ModelSerializer):
     access_token = serializers.SerializerMethodField()
     refresh_token = serializers.SerializerMethodField()
@@ -32,3 +32,19 @@ def get_tokens_for_user(user):
         'refresh': str(refresh),
         'access': str(refresh.access_token),
     }
+
+class LoginSerializer(TokenObtainPairSerializer):
+
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        refresh = self.get_token(self.user)
+        data['refresh'] = str(refresh)
+        data['access'] = str(refresh.access_token)
+        data['is_staff'] = self.user.is_staff
+        return data
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        token['is_staff'] = user.is_staff
+
+        return token
