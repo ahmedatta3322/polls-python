@@ -37,6 +37,17 @@ class PollSerializer(ModelSerializer):
         """
         instance.question = validated_data.get('question', instance.question)
         instance.expiration_date = validated_data.get('expiration_date', instance.expiration_date)
+        # update choices
+        choices = self.context['choices']
+        if choices is not None:
+            # delete old choices
+            print(choices)
+            Choice.objects.filter(poll=instance).delete()
+            # create new choices
+            for choice in choices:
+                print(choice.get("choice_text"))
+                Choice.objects.create(poll=instance, choice_text=choice.get("choice_text"))
+
         instance.save()
         return instance
     def get_choices(self, obj):
@@ -90,3 +101,5 @@ class VoteSerializer(ModelSerializer):
             raise serializers.ValidationError('You have already voted.')
         vote = Vote.objects.create(voted_by=user, **validated_data)
         return vote
+
+        

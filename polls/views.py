@@ -4,6 +4,9 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAdminUser , IsAuthenticated
 from .models import Poll
 from rest_framework import pagination
+from .models import Vote
+from django.db.models import Count
+import datetime
 # Create your views here.
 
 class PollCreateView(APIView):
@@ -40,7 +43,10 @@ class PollUpdateView(APIView):
             poll = Poll.objects.get(id=pk)
         except Poll.DoesNotExist:
             return Response(status=404, data={'message': 'Poll not found.'})
-        serializer = PollSerializer(poll, data=request.data, context={'created_by': user , 'user_id': user})
+        choices = None
+        if 'choices' in request.data:
+            choices = request.data.pop('choices')
+        serializer = PollSerializer(poll, data=request.data, context={'created_by': user , 'user_id': user , 'choices': choices})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=200)
@@ -196,4 +202,18 @@ class VoteView(APIView):
             serializer.save()
             return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)
+class NumberOfVotesDailyView(APIView):
+    """
+    View to retrieve the number of votes per day.
+    """
+    def get(self, request) -> Response:
+        """
+        Retrieve the number of votes per day.
+        """
+        # return votes per for the last 7 days
+        date = datetime.date.today() - datetime.timedelta(days=7)
+        votes = Vote.objects.filter(created_at__gte=date).values('created_at__date').annotate(Count('id'))
+        return Response(votes, status=200)
+    
+    
     
